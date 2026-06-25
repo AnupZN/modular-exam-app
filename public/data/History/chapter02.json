@@ -1,0 +1,60 @@
+{
+  "subject": "History",
+  "chapter": "The Maurya Empire",
+  "timePerQuestion": 30,
+  "positiveMarks": 2,
+  "negativeMarks": 0.50,
+  "questions": [
+    {
+      "id": 1,
+      "question": "Who was the Greek ambassador sent to the court of Chandragupta Maurya?",
+      "options": [
+        "Megasthenes",
+        "Deimachus",
+        "Dionysius",
+        "Seleucus Nicator"
+      ],
+      "correct": 0,
+      "explanation": "Megasthenes was sent by Seleucus I Nicator as an ambassador to Chandragupta Maurya's capital of Pataliputra, and wrote the famous account titled 'Indica'.",
+      "difficulty": "Easy",
+      "tags": [
+        "Chandragupta",
+        "Foreign accounts"
+      ]
+    },
+    {
+      "id": 2,
+      "question": "Which Mauryan ruler is famously credited with the spread of Buddhism across Sri Lanka and Southeast Asia?",
+      "options": [
+        "Chandragupta Maurya",
+        "Bindusara",
+        "Ashoka",
+        "Dasharatha"
+      ],
+      "correct": 2,
+      "explanation": "Emperor Ashoka embraced Buddhism after the Kalinga War and sent Dhamma missionaries, including his son Mahendra and daughter Sanghamitra, to Sri Lanka and other regions.",
+      "difficulty": "Easy",
+      "tags": [
+        "Ashoka",
+        "Buddhism"
+      ]
+    },
+    {
+      "id": 3,
+      "question": "The Arthashastra, a treatise on statecraft, economic policy, and military strategy, is attributed to:",
+      "options": [
+        "Kautilya",
+        "Kalidasa",
+        "Vishakhadatta",
+        "Bhasa"
+      ],
+      "correct": 0,
+      "explanation": "Kautilya (also known as Chanakya or Vishnugupta) was the prime minister and mentor of Chandragupta Maurya, and is the traditional author of the Arthashastra.",
+      "difficulty": "Easy",
+      "tags": [
+        "Literature",
+        "Administration"
+      ]
+    }
+  ]
+}

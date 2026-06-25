@@ -1,0 +1,94 @@
+{
+  "subject": "History",
+  "chapter": "Indus Valley Civilization",
+  "timePerQuestion": 30,
+  "positiveMarks": 2,
+  "negativeMarks": 0.50,
+  "questions": [
+    {
+      "id": 1,
+      "question": "Which of the following Indus Valley sites is known for having a unique dockyard?",
+      "options": [
+        "Harappa",
+        "Mohenjo-daro",
+        "Lothal",
+        "Kalibangan"
+      ],
+      "correct": 2,
+      "explanation": "Lothal in Gujarat, India, had a massive tidal dockyard connected to the ancient course of the Sabarmati river, demonstrating advanced maritime and engineering knowledge.",
+      "difficulty": "Easy",
+      "tags": [
+        "Lothal",
+        "Trade"
+      ]
+    },
+    {
+      "id": 2,
+      "question": "The famous 'Dancing Girl' bronze statue was discovered at which of the following Harappan sites?",
+      "options": [
+        "Mohenjo-daro",
+        "Harappa",
+        "Ropar",
+        "Chanhudaro"
+      ],
+      "correct": 0,
+      "explanation": "The 'Dancing Girl' is a masterpiece of prehistoric bronze sculpture, created using the lost-wax casting technique, and was discovered in the ruins of Mohenjo-daro in 1926.",
+      "difficulty": "Medium",
+      "tags": [
+        "Art",
+        "Mohenjo-daro"
+      ]
+    },
+    {
+      "id": 3,
+      "question": "What was the main commercial crop produced and exported by the Indus Valley Civilization?",
+      "options": [
+        "Barley",
+        "Cotton",
+        "Rice",
+        "Sugarcane"
+      ],
+      "correct": 1,
+      "explanation": "The Indus people were the first in the ancient world to cultivate and spin cotton (often referred to as 'Sindon' by the Greeks), which was a major export item to Mesopotamia.",
+      "difficulty": "Medium",
+      "tags": [
+        "Agriculture",
+        "Economy"
+      ]
+    },
+    {
+      "id": 4,
+      "question": "Which animal was NOT represented in Harappan seals and art?",
+      "options": [
+        "Humped Bull",
+        "Elephant",
+        "Rhinoceros",
+        "Lion"
+      ],
+      "correct": 3,
+      "explanation": "While tigers, elephants, rhinos, and humped bulls are frequently depicted on seals (like the famous Pashupati Seal), lions were not represented in Indus Valley art. Horses were also highly controversial or absent.",
+      "difficulty": "Hard",
+      "tags": [
+        "Seals",
+        "Fauna"
+      ]
+    },
+    {
+      "id": 5,
+      "question": "Which of the following Indus Valley sites shows evidence of ploughed fields and fire altars?",
+      "options": [
+        "Banawali",
+        "Kalibangan",
+        "Surkotada",
+        "Dholavira"
+      ],
+      "correct": 1,
+      "explanation": "Kalibangan, located in Rajasthan, shows evidence of a pre-Harappan ploughed agricultural field and a series of brick platforms containing fire altars, suggesting ritualistic practices.",
+      "difficulty": "Hard",
+      "tags": [
+        "Kalibangan",
+        "Ritual"
+      ]
+    }
+  ]
+}
