@@ -32,6 +32,19 @@
       ]
     },
     {
+      "id": "economy",
+      "name": "Economy",
+      "icon": "⚖️",
+      "folder": "Economy",
+      "chapters": [
+        {
+          "id": "chapter01",
+          "title": "Basics of Economy",
+          "file": "chapter01.json"
+        }
+      ]
+    },
+    {
       "id": "geography",
       "name": "Geography",
       "icon": "🌍",
