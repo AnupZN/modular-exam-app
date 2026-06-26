@@ -43,6 +43,7 @@ export default function ReviewView({
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [filter, setFilter] = useState<FilterType>("all");
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [language, setLanguage] = useState<"en" | "hi">("en");
 
   // Check if a question is bookmarked
   const isBookmarked = (qId: number) => {
@@ -77,6 +78,8 @@ export default function ReviewView({
   // Adjust current index when filtered list changes
   const activeQuestion = filteredQuestions[currentIndex] || filteredQuestions[0] || null;
 
+  const currentQuestion = activeQuestion;
+
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
@@ -91,11 +94,18 @@ export default function ReviewView({
 
   const handleCopyQuestion = () => {
     if (!activeQuestion) return;
-    const text = `Question: ${activeQuestion.question}\nOptions:\n${activeQuestion.options
+    const isHi = language === "hi" && !!activeQuestion.question_hi;
+    const qText = isHi ? activeQuestion.question_hi : activeQuestion.question;
+    const optionsList = isHi && activeQuestion.options_hi && activeQuestion.options_hi.length === activeQuestion.options.length 
+      ? activeQuestion.options_hi 
+      : activeQuestion.options;
+    const expText = isHi && activeQuestion.explanation_hi ? activeQuestion.explanation_hi : activeQuestion.explanation;
+
+    const text = `Question: ${qText}\nOptions:\n${optionsList
       .map((opt, idx) => `${["A", "B", "C", "D"][idx]}. ${opt}`)
       .join("\n")}\nCorrect Answer: ${
       ["A", "B", "C", "D"][activeQuestion.correct]
-    }\nExplanation: ${activeQuestion.explanation}`;
+    }\nExplanation: ${expText}`;
 
     navigator.clipboard.writeText(text).then(() => {
       setCopiedId(activeQuestion.id);
@@ -166,7 +176,7 @@ export default function ReviewView({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="review-layout">
           {/* Main Review Question Display (Left) */}
           <div className="lg:col-span-8 space-y-6">
-            {activeQuestion && (
+            {activeQuestion && currentQuestion && (
               <div className="bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-6 relative overflow-hidden">
                 {/* Visual feedback strip */}
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-100 dark:bg-slate-800"></div>
@@ -209,53 +219,92 @@ export default function ReviewView({
                   </div>
                 </div>
 
+                {/* Language switch bar inside Question box */}
+                <div className="flex items-center justify-between">
+                  <div className="inline-flex items-center p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-xl animate-fade-in" id="review-language-toggle">
+                    <button
+                      type="button"
+                      onClick={() => setLanguage("en")}
+                      className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all cursor-pointer ${
+                        language === "en"
+                          ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLanguage("hi")}
+                      className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all cursor-pointer ${
+                        language === "hi"
+                          ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      हिंदी
+                    </button>
+                  </div>
+                  {language === "hi" && !currentQuestion.question_hi && (
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2 py-1 rounded-md">
+                      Translation unavailable (English shown)
+                    </span>
+                  )}
+                </div>
+
                 {/* Question text */}
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-relaxed font-sans">
-                  {activeQuestion.question}
+                  {language === "hi" && currentQuestion.question_hi
+                    ? currentQuestion.question_hi
+                    : currentQuestion.question}
                 </h3>
 
                 {/* Options list showing feedback */}
                 <div className="space-y-3">
-                  {activeQuestion.options.map((opt, i) => {
-                    const label = ["A", "B", "C", "D"][i];
-                    const isCorrectOption = i === activeQuestion.correct;
-                    const isSelectedOption = i === userAnswers[activeQuestion.id];
+                  {(() => {
+                    const hasOptionsHi = language === "hi" && currentQuestion.options_hi && currentQuestion.options_hi.length === currentQuestion.options.length;
+                    const activeOptions = hasOptionsHi ? (currentQuestion.options_hi || []) : currentQuestion.options;
+                    return activeOptions.map((opt, i) => {
+                      const label = ["A", "B", "C", "D"][i];
+                      const isCorrectOption = i === activeQuestion.correct;
+                      const isSelectedOption = i === userAnswers[activeQuestion.id];
 
-                    let containerStyle = "border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900/10 text-slate-600 dark:text-slate-300";
-                    let labelStyle = "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400";
+                      let containerStyle = "border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900/10 text-slate-600 dark:text-slate-300";
+                      let labelStyle = "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400";
 
-                    if (isCorrectOption) {
-                      containerStyle = "border-emerald-500 dark:border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 font-bold";
-                      labelStyle = "bg-emerald-500 text-white";
-                    } else if (isSelectedOption && !isCorrectOption) {
-                      containerStyle = "border-rose-400 dark:border-rose-900 bg-rose-50/40 dark:bg-rose-950/25 text-rose-700 dark:text-rose-400";
-                      labelStyle = "bg-rose-500 text-white";
-                    }
+                      if (isCorrectOption) {
+                        containerStyle = "border-emerald-500 dark:border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 font-bold";
+                        labelStyle = "bg-emerald-500 text-white";
+                      } else if (isSelectedOption && !isCorrectOption) {
+                        containerStyle = "border-rose-400 dark:border-rose-900 bg-rose-50/40 dark:bg-rose-950/25 text-rose-700 dark:text-rose-400";
+                        labelStyle = "bg-rose-500 text-white";
+                      }
 
-                    return (
-                      <div
-                        key={i}
-                        className={`flex items-center gap-4 p-4 rounded-2xl border text-left font-sans text-sm ${containerStyle}`}
-                      >
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-black shrink-0 ${labelStyle}`}>
-                          {label}
+                      return (
+                        <div
+                          key={i}
+                          className={`flex items-center gap-4 p-4 rounded-2xl border text-left font-sans text-sm ${containerStyle}`}
+                        >
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-black shrink-0 ${labelStyle}`}>
+                            {label}
+                          </div>
+                          <span className="flex-1 leading-relaxed">{opt}</span>
+                          {isCorrectOption && (
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 py-1 px-2.5 rounded-lg flex items-center gap-1">
+                              <CheckCircle2 size={12} />
+                              <span className="hidden sm:inline">Correct Answer</span>
+                            </span>
+                          )}
+                          {isSelectedOption && !isCorrectOption && (
+                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 py-1 px-2.5 rounded-lg flex items-center gap-1">
+                              <XCircle size={12} />
+                              <span className="hidden sm:inline">Your Selection</span>
+                            </span>
+                          )}
                         </div>
-                        <span className="flex-1 leading-relaxed">{opt}</span>
-                        {isCorrectOption && (
-                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 py-1 px-2.5 rounded-lg flex items-center gap-1">
-                            <CheckCircle2 size={12} />
-                            <span className="hidden sm:inline">Correct Answer</span>
-                          </span>
-                        )}
-                        {isSelectedOption && !isCorrectOption && (
-                          <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 py-1 px-2.5 rounded-lg flex items-center gap-1">
-                            <XCircle size={12} />
-                            <span className="hidden sm:inline">Your Selection</span>
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
 
                 {/* Explanation text box */}
@@ -265,7 +314,9 @@ export default function ReviewView({
                     <h4 className="font-bold text-xs uppercase tracking-wider">Detailed Solution & Explanation</h4>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed font-sans font-medium">
-                    {activeQuestion.explanation}
+                    {language === "hi" && currentQuestion.explanation_hi
+                      ? currentQuestion.explanation_hi
+                      : currentQuestion.explanation}
                   </p>
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                     {activeQuestion.tags.map((tag) => (

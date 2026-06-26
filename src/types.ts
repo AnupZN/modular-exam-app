@@ -6,6 +6,9 @@ export interface Question {
   explanation: string;
   difficulty: "Easy" | "Medium" | "Hard";
   tags: string[];
+  question_hi?: string;
+  options_hi?: string[];
+  explanation_hi?: string;
 }
 
 export interface Chapter {
