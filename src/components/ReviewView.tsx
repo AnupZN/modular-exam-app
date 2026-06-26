@@ -14,6 +14,7 @@ import {
   Tag
 } from "lucide-react";
 import { Question, Bookmark as BookmarkType } from "../types";
+import { translateQuestion } from "../translation";
 
 interface ReviewViewProps {
   questions: Question[];
@@ -43,6 +44,7 @@ export default function ReviewView({
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [filter, setFilter] = useState<FilterType>("all");
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [language, setLanguage] = useState<"en" | "hi">("en");
 
   // Check if a question is bookmarked
   const isBookmarked = (qId: number) => {
@@ -76,6 +78,11 @@ export default function ReviewView({
 
   // Adjust current index when filtered list changes
   const activeQuestion = filteredQuestions[currentIndex] || filteredQuestions[0] || null;
+
+  const currentQuestion = useMemo(() => {
+    if (!activeQuestion) return null;
+    return translateQuestion(activeQuestion, language, subjectName);
+  }, [activeQuestion, language, subjectName]);
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
@@ -166,7 +173,7 @@ export default function ReviewView({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="review-layout">
           {/* Main Review Question Display (Left) */}
           <div className="lg:col-span-8 space-y-6">
-            {activeQuestion && (
+            {activeQuestion && currentQuestion && (
               <div className="bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-6 relative overflow-hidden">
                 {/* Visual feedback strip */}
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-100 dark:bg-slate-800"></div>
@@ -209,14 +216,40 @@ export default function ReviewView({
                   </div>
                 </div>
 
+                {/* Language Switcher Buttons during Review */}
+                <div className="flex justify-end mb-1" id="review-language-toggle-wrapper">
+                  <div className="inline-flex items-center p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+                    <button
+                      onClick={() => setLanguage("en")}
+                      className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all cursor-pointer ${
+                        language === "en"
+                          ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      onClick={() => setLanguage("hi")}
+                      className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all cursor-pointer ${
+                        language === "hi"
+                          ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      हिंदी
+                    </button>
+                  </div>
+                </div>
+
                 {/* Question text */}
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-relaxed font-sans">
-                  {activeQuestion.question}
+                  {currentQuestion.question}
                 </h3>
 
                 {/* Options list showing feedback */}
                 <div className="space-y-3">
-                  {activeQuestion.options.map((opt, i) => {
+                  {currentQuestion.options.map((opt, i) => {
                     const label = ["A", "B", "C", "D"][i];
                     const isCorrectOption = i === activeQuestion.correct;
                     const isSelectedOption = i === userAnswers[activeQuestion.id];
@@ -265,7 +298,7 @@ export default function ReviewView({
                     <h4 className="font-bold text-xs uppercase tracking-wider">Detailed Solution & Explanation</h4>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed font-sans font-medium">
-                    {activeQuestion.explanation}
+                    {currentQuestion.explanation}
                   </p>
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                     {activeQuestion.tags.map((tag) => (

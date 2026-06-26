@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Question, ExamSession, Bookmark as BookmarkType } from "../types";
 import { formatTime } from "../utils";
+import { translateQuestion } from "../translation";
 
 interface ExamViewProps {
   session: ExamSession;
@@ -63,13 +64,22 @@ export default function ExamView({
   const [isPaletteOpen, setIsPaletteOpen] = useState<boolean>(false); // mobile palette drawer
   const [showShortcutHelp, setShowShortcutHelp] = useState<boolean>(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState<boolean>(false);
+  
+  // Language & Pre-Test setup
+  const [language, setLanguage] = useState<"en" | "hi">("en");
+  const [showPreTestPanel, setShowPreTestPanel] = useState<boolean>(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const currentQuestion = questions[currentIndex];
+  const rawQuestion = questions[currentIndex];
+  const currentQuestion = useMemo(() => {
+    if (!rawQuestion) return rawQuestion;
+    return translateQuestion(rawQuestion, language, subjectName);
+  }, [rawQuestion, language, subjectName]);
 
   // Set the option when switching questions
   useEffect(() => {
+    if (!currentQuestion) return;
     const previousAns = userAnswers[currentQuestion.id];
     setSelectedOption(previousAns !== undefined ? previousAns : null);
 
@@ -82,6 +92,8 @@ export default function ExamView({
 
   // Timer Effect
   useEffect(() => {
+    if (showPreTestPanel) return;
+
     if (timeLeft <= 0) {
       // Auto submit when time runs out
       handleSubmit(true);
@@ -93,7 +105,7 @@ export default function ExamView({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timeLeft]);
+  }, [timeLeft, showPreTestPanel]);
 
   // Keyboard Shortcuts Effect
   useEffect(() => {
@@ -278,23 +290,30 @@ export default function ExamView({
       id="exam-layout-root"
     >
       {/* SSC Top Header Bar */}
-      <header className="flex items-center justify-between px-6 py-3 bg-slate-800 text-white shrink-0 shadow-md select-none rounded-t-xl md:rounded-t-3xl">
-        <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 p-1.5 rounded-lg text-white font-black text-sm">SSC</div>
-          <div>
-            <h1 className="font-bold text-sm tracking-tight leading-tight">
+      <header className="flex items-center justify-between px-3 sm:px-6 py-3 bg-slate-800 text-white shrink-0 shadow-md select-none rounded-t-xl md:rounded-t-3xl">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="bg-indigo-600 p-1.5 rounded-lg text-white font-black text-xs sm:text-sm shrink-0">SSC</div>
+          <div className="min-w-0">
+            <h1 className="font-bold text-xs sm:text-sm tracking-tight leading-tight truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[220px] md:max-w-xs lg:max-w-none" title={isPracticeMode ? "Mock Practice Portal" : chapterTitle}>
               {isPracticeMode ? "Mock Practice Portal" : chapterTitle}
             </h1>
-            <p className="text-[10px] text-slate-300 tracking-wide font-medium">{subjectName}</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-300 tracking-wide font-medium truncate">{subjectName}</p>
           </div>
         </div>
 
         {/* Toolbar Controls */}
-        <div className="flex items-center gap-3 sm:gap-4 text-xs font-semibold">
+        <div className="flex items-center gap-1.5 sm:gap-4 text-xs font-semibold shrink-0">
           {/* Timer Display */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900/60 rounded-xl font-mono text-emerald-400 border border-slate-700">
-            <Clock size={14} className="animate-pulse" />
-            <span>Time Left: {formatTime(timeLeft)}</span>
+          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-slate-900/60 rounded-xl font-mono text-emerald-400 border border-slate-700 text-[11px] sm:text-xs">
+            <Clock size={13} className={showPreTestPanel ? "" : "animate-pulse"} />
+            <span>
+              {showPreTestPanel ? "Paused" : (
+                <>
+                  <span className="hidden xs:inline text-slate-400 font-sans mr-0.5">Time Left:</span>
+                  {formatTime(timeLeft)}
+                </>
+              )}
+            </span>
           </div>
 
           {/* Zoom controls */}
@@ -319,7 +338,7 @@ export default function ExamView({
           {/* Fullscreen Toggle */}
           <button
             onClick={toggleFullscreen}
-            className="p-1.5 bg-slate-900/40 hover:bg-slate-700 rounded-xl border border-slate-700/60 transition cursor-pointer"
+            className="hidden xs:inline-flex p-1.5 bg-slate-900/40 hover:bg-slate-700 rounded-xl border border-slate-700/60 transition cursor-pointer items-center justify-center"
             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
             {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
@@ -337,7 +356,7 @@ export default function ExamView({
           {/* Keyboard Info */}
           <button
             onClick={() => setShowShortcutHelp(true)}
-            className="p-1.5 bg-slate-900/40 hover:bg-slate-700 rounded-xl border border-slate-700/60 transition cursor-pointer"
+            className="hidden sm:inline-flex p-1.5 bg-slate-900/40 hover:bg-slate-700 rounded-xl border border-slate-700/60 transition cursor-pointer items-center justify-center"
             title="Keyboard Shortcuts"
           >
             <Keyboard size={14} />
@@ -355,212 +374,352 @@ export default function ExamView({
 
       {/* Main Content Pane */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Side: Question Pane */}
-        <div className="flex-1 flex flex-col justify-between overflow-y-auto p-4 md:p-8 space-y-6">
-          <div className="max-w-3xl mx-auto w-full space-y-6">
-            {/* Question Subheader Info */}
-            <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="font-mono bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 py-1 px-3 rounded-lg font-bold">
-                  Question {currentIndex + 1} of {questions.length}
-                </span>
-                <span className="font-medium font-mono text-slate-500">
-                  Marks: +{session.questions[0] ? 2.0 : 2.0} | -0.5
-                </span>
+        {showPreTestPanel ? (
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+            <div className="max-w-3xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-10 shadow-xl space-y-8 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center shrink-0">
+                  <HelpCircle size={24} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 dark:text-slate-100">Instructions & Language Selection</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Please configure your preferences and read the guidelines before starting</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-bold py-1 px-2.5 rounded-md uppercase tracking-wider ${
-                  currentQuestion.difficulty === "Easy"
-                    ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400"
-                    : currentQuestion.difficulty === "Hard"
-                    ? "bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400"
-                    : "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400"
-                }`}>
-                  {currentQuestion.difficulty}
-                </span>
+
+              {/* Instructions Detail */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider">Test Parameters</h3>
+                  <div className="space-y-3 bg-slate-50 dark:bg-slate-800/20 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/10 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800/30">
+                      <span className="text-slate-400 font-medium">Subject</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{subjectName}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800/30">
+                      <span className="text-slate-400 font-medium">Chapter</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300 max-w-[180px] truncate" title={chapterTitle}>{chapterTitle}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800/30">
+                      <span className="text-slate-400 font-medium">Total Questions</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">{questions.length} Items</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-400 font-medium">Total Duration</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">~{Math.ceil(timeLeft / 60)} Minutes</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 bg-indigo-50/40 dark:bg-indigo-950/10 p-4 rounded-2xl border border-indigo-100/30 dark:border-indigo-950/20 text-xs">
+                    <h4 className="font-bold text-indigo-700 dark:text-indigo-400">Marking Scheme</h4>
+                    <ul className="space-y-1.5 list-disc list-inside text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      <li><span className="text-emerald-600 dark:text-emerald-400 font-bold">+2.00 Marks</span> for each correct response</li>
+                      <li><span className="text-rose-600 dark:text-rose-400 font-bold">-0.50 Marks</span> for each wrong response</li>
+                      <li><span className="font-bold">0.00 Marks</span> for unanswered/skipped questions</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <h3 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3">Choose Question Language</h3>
+                    <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                      Select your preferred language. You can also toggle this easily at any point during the test using the switch in the top toolbar.
+                    </p>
+                    
+                    {/* Language Selection Buttons */}
+                    <div className="grid grid-cols-2 gap-3" id="pretest-language-selection">
+                      <button
+                        onClick={() => setLanguage("en")}
+                        className={`py-4 px-4 rounded-2xl border font-bold text-sm transition cursor-pointer text-center ${
+                          language === "en"
+                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                            : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100"
+                        }`}
+                      >
+                        English
+                      </button>
+                      <button
+                        onClick={() => setLanguage("hi")}
+                        className={`py-4 px-4 rounded-2xl border font-bold text-sm transition cursor-pointer text-center ${
+                          language === "hi"
+                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                            : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100"
+                        }`}
+                      >
+                        हिंदी (Hindi)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <h4 className="font-bold text-xs text-slate-700 dark:text-slate-300">Terms & Declaration</h4>
+                    <label className="flex items-start gap-3 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        defaultChecked
+                        className="mt-1 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>I have read all instructions and understand the marking scheme. I agree to begin the mock examination.</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
                 <button
-                  onClick={() => onToggleBookmark(currentQuestion.id)}
-                  className={`p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 transition cursor-pointer ${
-                    isBookmarked
-                      ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 border-amber-200 dark:border-amber-800/40"
-                      : "hover:bg-slate-100 text-slate-400 dark:hover:bg-slate-800"
-                  }`}
-                  title="Bookmark this question"
+                  onClick={onExitExam}
+                  className="w-full sm:w-auto py-3.5 px-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl cursor-pointer transition text-center"
                 >
-                  <Bookmark size={15} fill={isBookmarked ? "currentColor" : "none"} />
+                  Exit Exam Portal
+                </button>
+                <button
+                  onClick={() => setShowPreTestPanel(false)}
+                  className="w-full sm:flex-1 py-3.5 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-500/10 cursor-pointer transition text-center"
+                  id="pretest-start-btn"
+                >
+                  I am ready to begin the test
                 </button>
               </div>
             </div>
+          </div>
+        ) : (
+          <>
+            {/* Left Side: Question Pane */}
+            <div className="flex-1 flex flex-col justify-between overflow-y-auto p-4 md:p-8 space-y-6">
+              <div className="max-w-3xl mx-auto w-full space-y-6">
+                {/* Language Switcher Buttons during Test */}
+                <div className="flex justify-end mb-1" id="language-toggle-wrapper">
+                  <div className="inline-flex items-center p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+                    <button
+                      onClick={() => setLanguage("en")}
+                      className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all cursor-pointer ${
+                        language === "en"
+                          ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      onClick={() => setLanguage("hi")}
+                      className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all cursor-pointer ${
+                        language === "hi"
+                          ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      हिंदी
+                    </button>
+                  </div>
+                </div>
 
-            {/* Question Text Box */}
-            <div className="space-y-4">
-              <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100 font-sans leading-relaxed">
-                {currentQuestion.question}
-              </h2>
-            </div>
-
-            {/* Options Layout */}
-            <div className="space-y-3" id="options-container">
-              {currentQuestion.options.map((option, i) => {
-                const label = ["A", "B", "C", "D"][i] || String.fromCharCode(65 + i);
-                const isSelected = selectedOption === i;
-
-                return (
-                  <button
-                    key={i}
-                    onClick={() => handleSelectOption(i)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left font-sans font-medium transition cursor-pointer outline-none ${
-                      isSelected
-                        ? "bg-indigo-50/60 dark:bg-indigo-950/20 border-indigo-500 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-sm"
-                        : "bg-white dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-slate-900/60 text-slate-600 dark:text-slate-300"
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold transition-colors ${
-                      isSelected
-                        ? "bg-indigo-600 text-white"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                {/* Question Subheader Info */}
+                <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 py-1 px-3 rounded-lg font-bold">
+                      Question {currentIndex + 1} of {questions.length}
+                    </span>
+                    <span className="font-medium font-mono text-slate-500">
+                      Marks: +{session.questions[0] ? 2.0 : 2.0} | -0.5
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold py-1 px-2.5 rounded-md uppercase tracking-wider ${
+                      currentQuestion.difficulty === "Easy"
+                        ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400"
+                        : currentQuestion.difficulty === "Hard"
+                        ? "bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400"
+                        : "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400"
                     }`}>
-                      {label}
-                    </div>
-                    <span className="flex-1 text-sm md:text-base leading-relaxed">{option}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                      {currentQuestion.difficulty}
+                    </span>
+                    <button
+                      onClick={() => onToggleBookmark(currentQuestion.id)}
+                      className={`p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 transition cursor-pointer ${
+                        isBookmarked
+                          ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 border-amber-200 dark:border-amber-800/40"
+                          : "hover:bg-slate-100 text-slate-400 dark:hover:bg-slate-800"
+                      }`}
+                      title="Bookmark this question"
+                    >
+                      <Bookmark size={15} fill={isBookmarked ? "currentColor" : "none"} />
+                    </button>
+                  </div>
+                </div>
 
-          {/* Bottom Control Bar */}
-          <footer className="max-w-3xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800 pt-5 mt-auto">
-            {/* Left side actions */}
-            <div className="flex gap-2 w-full sm:w-auto">
-              <button
-                onClick={handleMarkForReview}
-                className="flex-1 sm:flex-none py-2.5 px-4 bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-950 hover:bg-purple-100 text-xs font-extrabold rounded-xl transition cursor-pointer"
-              >
-                Mark For Review & Next
-              </button>
-              <button
-                onClick={handleClearResponse}
-                disabled={selectedOption === null}
-                className={`flex-1 sm:flex-none py-2.5 px-4 text-xs font-extrabold rounded-xl transition cursor-pointer border ${
-                  selectedOption !== null
-                    ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
-                    : "bg-slate-50 dark:bg-slate-800/20 text-slate-400 border-slate-100 dark:border-slate-800/20 cursor-not-allowed"
-                }`}
-              >
-                Clear Response
-              </button>
-            </div>
+                {/* Question Text Box */}
+                <div className="space-y-4">
+                  <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100 font-sans leading-relaxed">
+                    {currentQuestion.question}
+                  </h2>
+                </div>
 
-            {/* Right side actions */}
-            <div className="flex gap-2 w-full sm:w-auto justify-end">
-              <button
-                onClick={handlePrevious}
-                disabled={currentIndex === 0}
-                className={`py-2.5 px-4 text-xs font-extrabold rounded-xl border transition cursor-pointer flex items-center gap-1 ${
-                  currentIndex > 0
-                    ? "bg-white dark:bg-slate-900/30 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100"
-                    : "bg-slate-50 dark:bg-slate-800/20 text-slate-400 border-slate-100 dark:border-slate-800/20 cursor-not-allowed"
-                }`}
-              >
-                <ChevronLeft size={14} />
-                <span>Previous</span>
-              </button>
-              <button
-                onClick={handleSaveAndNext}
-                className="flex-1 sm:flex-none py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm shadow-indigo-500/10"
-              >
-                <span>Save & Next</span>
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </footer>
-        </div>
+                {/* Options Layout */}
+                <div className="space-y-3" id="options-container">
+                  {currentQuestion.options.map((option, i) => {
+                    const label = ["A", "B", "C", "D"][i] || String.fromCharCode(65 + i);
+                    const isSelected = selectedOption === i;
 
-        {/* Right Side: SSC Candidate & Palette Desktop Panel */}
-        <aside className="hidden md:flex flex-col w-72 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shrink-0 select-none">
-          {/* Candidate Bio block */}
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center">
-              <User size={22} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Candidate</p>
-              <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">Practice Candidate</h3>
-            </div>
-          </div>
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handleSelectOption(i)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left font-sans font-medium transition cursor-pointer outline-none ${
+                          isSelected
+                            ? "bg-indigo-50/60 dark:bg-indigo-950/20 border-indigo-500 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-sm"
+                            : "bg-white dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-slate-900/60 text-slate-600 dark:text-slate-300"
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold transition-colors ${
+                          isSelected
+                            ? "bg-indigo-600 text-white"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                        }`}>
+                          {label}
+                        </div>
+                        <span className="flex-1 text-sm md:text-base leading-relaxed">{option}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* Palette counters */}
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-center text-[10px] font-bold">
-            <div className="flex items-center gap-1.5 p-1.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
-              <span className="w-5 h-5 bg-emerald-500 text-white rounded-md flex items-center justify-center font-mono text-xs">{paletteStats.answered}</span>
-              <span>Answered</span>
-            </div>
-            <div className="flex items-center gap-1.5 p-1.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-lg">
-              <span className="w-5 h-5 bg-rose-500 text-white rounded-md flex items-center justify-center font-mono text-xs">{paletteStats.notAnswered}</span>
-              <span>Skipped</span>
-            </div>
-            <div className="flex items-center gap-1.5 p-1.5 bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 rounded-lg">
-              <span className="w-5 h-5 bg-purple-500 text-white rounded-md flex items-center justify-center font-mono text-xs">{paletteStats.marked}</span>
-              <span>Marked</span>
-            </div>
-            <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 rounded-lg">
-              <span className="w-5 h-5 bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md flex items-center justify-center font-mono text-xs">{paletteStats.notVisited}</span>
-              <span>Unvisited</span>
-            </div>
-          </div>
-
-          {/* Question Grid palette */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Question Palette</h4>
-            <div className="grid grid-cols-5 gap-2.5">
-              {questions.map((q, i) => {
-                const isSelected = currentIndex === i;
-                const isAns = userAnswers[q.id] !== undefined && userAnswers[q.id] !== null;
-                const isMarked = markedForReview[q.id];
-                const isVis = visited[q.id];
-
-                // Determine Palette colors
-                let btnBg = "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400";
-                if (isMarked) {
-                  btnBg = "bg-purple-500 hover:bg-purple-600 text-white";
-                } else if (isAns) {
-                  btnBg = "bg-emerald-500 hover:bg-emerald-600 text-white";
-                } else if (isVis) {
-                  btnBg = "bg-rose-500 hover:bg-rose-600 text-white";
-                }
-
-                return (
+              {/* Bottom Control Bar */}
+              <footer className="max-w-3xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800 pt-5 mt-auto">
+                {/* Left side actions */}
+                <div className="flex gap-2 w-full sm:w-auto">
                   <button
-                    key={q.id}
-                    onClick={() => handleJumpToQuestion(i)}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-black transition-all cursor-pointer ${btnBg} ${
-                      isSelected ? "ring-4 ring-indigo-600 dark:ring-indigo-500 scale-105" : ""
+                    onClick={handleMarkForReview}
+                    className="flex-1 sm:flex-none py-2.5 px-4 bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-950 hover:bg-purple-100 text-xs font-extrabold rounded-xl transition cursor-pointer"
+                  >
+                    Mark For Review & Next
+                  </button>
+                  <button
+                    onClick={handleClearResponse}
+                    disabled={selectedOption === null}
+                    className={`flex-1 sm:flex-none py-2.5 px-4 text-xs font-extrabold rounded-xl transition cursor-pointer border ${
+                      selectedOption !== null
+                        ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
+                        : "bg-slate-50 dark:bg-slate-800/20 text-slate-400 border-slate-100 dark:border-slate-800/20 cursor-not-allowed"
                     }`}
                   >
-                    {i + 1}
+                    Clear Response
                   </button>
-                );
-              })}
-            </div>
-          </div>
+                </div>
 
-          {/* Submission control block */}
-          <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            <button
-              onClick={() => setShowSubmitConfirm(true)}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition active:scale-98"
-            >
-              Submit Exam
-            </button>
-            <button
-              onClick={onExitExam}
-              className="w-full py-2.5 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-rose-600 hover:bg-rose-50/40 dark:hover:bg-rose-950/20 rounded-xl transition cursor-pointer"
-            >
-              Exit Portal
-            </button>
-          </div>
-        </aside>
+                {/* Right side actions */}
+                <div className="flex gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={handlePrevious}
+                    disabled={currentIndex === 0}
+                    className={`py-2.5 px-4 text-xs font-extrabold rounded-xl border transition cursor-pointer flex items-center gap-1 ${
+                      currentIndex > 0
+                        ? "bg-white dark:bg-slate-900/30 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100"
+                        : "bg-slate-50 dark:bg-slate-800/20 text-slate-400 border-slate-100 dark:border-slate-800/20 cursor-not-allowed"
+                    }`}
+                  >
+                    <ChevronLeft size={14} />
+                    <span>Previous</span>
+                  </button>
+                  <button
+                    onClick={handleSaveAndNext}
+                    className="flex-1 sm:flex-none py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm shadow-indigo-500/10"
+                  >
+                    <span>Save & Next</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </footer>
+            </div>
+
+            {/* Right Side: SSC Candidate & Palette Desktop Panel */}
+            <aside className="hidden md:flex flex-col w-72 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shrink-0 select-none">
+              {/* Candidate Bio block */}
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center">
+                  <User size={22} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Candidate</p>
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">Practice Candidate</h3>
+                </div>
+              </div>
+
+              {/* Palette counters */}
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-center text-[10px] font-bold">
+                <div className="flex items-center gap-1.5 p-1.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                  <span className="w-5 h-5 bg-emerald-500 text-white rounded-md flex items-center justify-center font-mono text-xs">{paletteStats.answered}</span>
+                  <span>Answered</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-1.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-lg">
+                  <span className="w-5 h-5 bg-rose-500 text-white rounded-md flex items-center justify-center font-mono text-xs">{paletteStats.notAnswered}</span>
+                  <span>Skipped</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-1.5 bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 rounded-lg">
+                  <span className="w-5 h-5 bg-purple-500 text-white rounded-md flex items-center justify-center font-mono text-xs">{paletteStats.marked}</span>
+                  <span>Marked</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 rounded-lg">
+                  <span className="w-5 h-5 bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md flex items-center justify-center font-mono text-xs">{paletteStats.notVisited}</span>
+                  <span>Unvisited</span>
+                </div>
+              </div>
+
+              {/* Question Grid palette */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Question Palette</h4>
+                <div className="grid grid-cols-5 gap-2.5">
+                  {questions.map((q, i) => {
+                    const isSelected = currentIndex === i;
+                    const isAns = userAnswers[q.id] !== undefined && userAnswers[q.id] !== null;
+                    const isMarked = markedForReview[q.id];
+                    const isVis = visited[q.id];
+
+                    // Determine Palette colors
+                    let btnBg = "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400";
+                    if (isMarked) {
+                      btnBg = "bg-purple-500 hover:bg-purple-600 text-white";
+                    } else if (isAns) {
+                      btnBg = "bg-emerald-500 hover:bg-emerald-600 text-white";
+                    } else if (isVis) {
+                      btnBg = "bg-rose-500 hover:bg-rose-600 text-white";
+                    }
+
+                    return (
+                      <button
+                        key={q.id}
+                        onClick={() => handleJumpToQuestion(i)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-black transition-all cursor-pointer ${btnBg} ${
+                          isSelected ? "ring-4 ring-indigo-600 dark:ring-indigo-500 scale-105" : ""
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Submission control block */}
+              <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <button
+                  onClick={() => setShowSubmitConfirm(true)}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition active:scale-98"
+                >
+                  Submit Exam
+                </button>
+                <button
+                  onClick={onExitExam}
+                  className="w-full py-2.5 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-rose-600 hover:bg-rose-50/40 dark:hover:bg-rose-950/20 rounded-xl transition cursor-pointer"
+                >
+                  Exit Portal
+                </button>
+              </div>
+            </aside>
+          </>
+        )}
       </div>
 
       {/* Mobile Palette Drawer Overlay */}
